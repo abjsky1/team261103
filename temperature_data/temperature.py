@@ -11,8 +11,8 @@ df = pd.read_csv('./temperature_data/전국월별_기온.csv',
                  skiprows=7)         # 앞의 설명 7줄 건너뛰기
 print(df.head())
 
-df['날짜'] = df['날짜'].str.strip()
-df['날짜'] = pd.to_datetime(df['날짜'])
+df['년월'] = df['년월'].str.strip()
+df['년월'] = pd.to_datetime(df['년월'], format='%m-%y')   # 1-24 -> 2024-01-01
 
 print(df.head())
 df.info()
