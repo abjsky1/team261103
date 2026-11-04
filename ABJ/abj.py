@@ -1,8 +1,6 @@
-<<<<<<< HEAD
 # 모기 데이터1 : https://data.seoul.go.kr/dataList/OA-22301/F/1/datasetView.do
 # 모기 데이터2 : https://news.seoul.go.kr/welfare/digital_mosquito
 
-=======
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,4 +32,3 @@ plt.rcParams['axes.unicode_minus'] = False
 sns.set_theme(font=font_name, rc={'axes.unicode_minus': False}, style='whitegrid')
 
 pd.set_option('display.unicode.east_asian_width', True)
->>>>>>> 14c8ac9f06e93c9ae9d5518bdfaacb726a4b17f0

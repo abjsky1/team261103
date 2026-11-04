@@ -15,3 +15,4 @@ df['날짜'] = df['날짜'].str.strip()
 df['날짜'] = pd.to_datetime(df['날짜'])
 
 print(df.head())
+df.info()
