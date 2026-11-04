@@ -6,7 +6,7 @@ import matplotlib.font_manager as fm
 
 pd.set_option('display.unicode.east_asian_width', True)
 
-df = pd.read_csv('./temperature_data/ta_20261104145338.csv',
+df = pd.read_csv('./temperature_data/전국월별_기온.csv',
                  encoding='cp949',   # 한국어 인코딩으로 읽기
                  skiprows=7)         # 앞의 설명 7줄 건너뛰기
 print(df.head())
