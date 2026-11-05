@@ -94,15 +94,209 @@ print(cold)
 
 # [2. 가설 1: 기온이 비슷한 봄·가을의 천식 환자 수 비교]
 # 가설: 월평균기온이 비슷한 봄과 가을을 비교했을 때, 가을보다 봄에 천식 진료 환자 수가 많을 것이다.
+
+
 # 2-1. 봄·가을이 모두 있는 2024~2025년에서 봄(3~5월), 가을(9~11월)을 추출한다.
-# 2-2. 같은 연도 안에서 봄·가을 모든 조합의 월평균기온 차이(절댓값)를 구한다.
-# 2-3. 기온 차이 2℃ 이내인 조합을 차이가 작은 순으로 선택한다. 같은 달은 한 번만 사용한다.
-#      동률이면 봄 연월, 가을 연월이 빠른 순으로 선택한다. 기준은 환자 수를 비교하기 전에 정한다.
+# 1. 비교할 기온 데이터 준비 
+temp = df_temp[['년월','평균기온(℃)']].copy()
+temp = temp.dropna(subset=['년월','평균기온(℃)']) # 결측치 행제거
+# copy() 선택한 데이터를 복사해서 새로운 데이터프레임으로 만듬
+
+# 년월이 Period 형식인 경우에도 처리 timestamp로 변환 / 추후에 추출에 필요함
+if isinstance(temp['년월'].dtype, pd.PeriodDtype):
+    temp['년월'] = temp['년월'].dt.to_timestamp()
+else:
+    temp['년월'] = pd.to_datetime(temp['년월'])
+
+# 봄과 가을 자료가 모두 있는 2024~2025년 사용
+# isin(내용)  : 내용과 일치하는지 확인   
+temp = temp[temp['년월'].dt.year.isin([2024, 2025])].copy()
+temp['연도'] = temp['년월'].dt.year
+
+# 2. 봄과 가을 분리
+spring = temp[temp['년월'].dt.month.isin([3, 4, 5])].rename(
+    columns={'년월': '봄_년월', '평균기온(℃)': '봄_평균기온'}
+)
+
+autumn = temp[temp['년월'].dt.month.isin([9, 10, 11])].rename(
+    columns={'년월': '가을_년월', '평균기온(℃)': '가을_평균기온'}
+)
+
+# 3. 같은 연도의 봄·가을 모든 조합 비교
+# 연도가 같은 데이터 끼리 결합
+candidates = spring.merge(autumn,
+    how='cross',
+    suffixes=('_봄', '_가을')
+)
+candidates['기온차이'] = (
+    candidates['봄_평균기온'] - candidates['가을_평균기온']
+).abs()
+# 봄과 가을기온의 평균을 빼고 절대값을 '기온차이' 라는 새로운 컬럼을 생성하여 저장
+
+# 기온 차이가 2℃ 이내인 조합을 작은 차이 순으로 정렬 / 오름차순 기본값
+candidates = candidates[candidates['기온차이'] <= 2].sort_values(
+    ['기온차이', '봄_년월', '가을_년월']
+)
+
+# 4. 같은 달이 중복되지 않도록 선택
+used_months = set()     # 사용한 날짜 / 중복허용 x
+selected = []           # 선택한 행의 인덱스 저장
+
+
+# iterrows : 데이터프레임을 한 행씩 반복해서 가져오는 함수 
+for idx, row in candidates.iterrows():
+    spring_month = row['봄_년월']
+    autumn_month = row['가을_년월']
+
+    if spring_month in used_months or autumn_month in used_months:
+        continue
+
+    selected.append(idx)
+    used_months.update([spring_month, autumn_month])
+
+similar_months = candidates.loc[selected].sort_values(
+    ['봄_년월', '가을_년월']
+).reset_index(drop=True)
+
+# 5. 결과 출력
+if similar_months.empty:
+    print('기온 차이가 2℃ 이내인 봄·가을 조합이 없습니다.')
+else:
+    print(similar_months.to_string(index=False))
+
+
 # 2-4. 비교표를 만든다: 봄 연월·기온·환자수 | 가을 연월·기온·환자수 | 봄-가을 환자 수 차이
 # 2-5. 선택된 쌍의 평균 환자 수 차이와 봄 환자 수가 더 많은 쌍의 비율을 구한다.
 # 2-6. 비교 쌍별 봄·가을 환자 수를 나란한 막대그래프로 그리고 연월·기온을 표시한다.
 # 2-7. 평균 차이와 쌍별 결과를 함께 보고 가설 지지 여부를 정리한다.
 #      비교 쌍이 없으면 비교 불가, 적으면 탐색적 결과로 기록한다. 기온 외 요인의 영향도 고려한다.
+from pathlib import Path
+
+# 이미 선택한 봄·가을 날짜 가져오기
+selected_months = pd.concat([
+    similar_months['봄_년월'],
+    similar_months['가을_년월']
+]).drop_duplicates()
+
+patient_list = []
+
+for disease in ['감기', '폐렴', '비염']:
+    path = Path(
+        f'./질병/국민관심질병_성별연령별10세구간별현황_'
+        f'202401_202603({disease}).xlsx'
+    )
+
+    raw = pd.read_excel(path, header=None)
+
+    gender = raw.iloc[:, 1].astype(str).str.strip()
+    age = raw.iloc[:, 2].astype(str).str.strip()
+
+    # 남·여의 나이대별 자료만 선택 (계·소계 제외)
+    rows = (
+        gender.isin(['남', '여'])
+        & ~age.isin(['계', '소계', '', 'nan'])
+    )
+
+    # '환자수' 열만 선택
+    patient_cols = raw.columns[
+        raw.iloc[3].astype(str).str.strip().eq('환자수')
+    ]
+
+    data = raw.loc[rows, [1, 2] + patient_cols.tolist()].copy()
+
+    months = raw.iloc[2].ffill()
+    data.columns = ['성별', '연령'] + months.loc[patient_cols].tolist()
+
+    data['성별'] = data['성별'].astype(str).str.strip()
+    data['연령'] = data['연령'].astype(str).str.strip()
+
+    # 월별 자료를 세로 형태로 변환
+    data = data.melt(
+        id_vars=['성별', '연령'],
+        var_name='년월',
+        value_name='환자수'
+    )
+
+    # 기존 날짜와 비교할 수 있도록 형식 통일
+    data['년월'] = pd.to_datetime(
+        data['년월'].astype(str).str.strip(),
+        format='%Y년 %m월'
+    )
+
+    data['환자수'] = pd.to_numeric(
+        data['환자수'].astype(str)
+            .str.replace(',', '', regex=False)
+            .str.strip()
+    )
+
+    data['질병'] = disease
+
+    # 기온이 비슷한 달에 해당하는 자료만 선택
+    data = data[data['년월'].isin(selected_months)].copy()
+
+    patient_list.append(data)
+
+# 세 질병 데이터 합치기
+patients = pd.concat(patient_list, ignore_index=True)
+
+patients = patients[
+    ['년월', '질병', '성별', '연령', '환자수']
+].sort_values(
+    ['년월', '질병', '성별', '연령']
+).reset_index(drop=True)
+
+# 질병별 데이터
+cold = patients[patients['질병'].eq('감기')].copy()
+pneumonia = patients[patients['질병'].eq('폐렴')].copy()
+rhinitis = patients[patients['질병'].eq('비염')].copy()
+
+# 전체 출력
+print(patients.to_string(index=False))
+
+# ================================== 시각화 ===============================================
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.rcParams['font.family'] = 'Malgun Gothic'
+
+data = patients.copy()
+data['연령'] = data['연령'].str.extract(r'(\d+)')[0].astype(int)
+
+# 질병·나이대·성별로 환자수 합산
+summary = data.groupby(
+    ['질병', '연령', '성별'], as_index=False
+)['환자수'].sum()
+
+# 세 질병 전체 합계도 남녀 구분
+total = summary.groupby(
+    ['연령', '성별'], as_index=False
+)['환자수'].sum()
+
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+
+for ax, disease in zip(axes.flat, ['감기', '폐렴', '비염', '전체']):
+    plot_data = (
+        total if disease == '전체'
+        else summary[summary['질병'] == disease]
+    )
+
+    sns.barplot(
+        data=plot_data,
+        x='연령',
+        y='환자수',
+        hue='성별',
+        hue_order=['남', '여'],
+        palette={'남': '#3498DB', '여': '#F39C12'},
+        ax=ax
+    )
+
+    ax.set_title(disease)
+    ax.set_xlabel('나이대')
+    ax.set_ylabel('환자수 합계 (명)')
+    ax.legend(title='성별')
+
+plt.tight_layout()
+plt.show()
 
 # [3. 가설 2: 기온 하락 폭과 감기 환자 수의 관계 및 시차 비교]
 # 가설: 전월 대비 월평균기온의 하락 폭이 클수록 급성 상기도감염(감기) 진료 환자 수가 많을 것이다.
