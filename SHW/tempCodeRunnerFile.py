@@ -1,1 +1,0 @@
- print(similar_months.to_string(index=False))
