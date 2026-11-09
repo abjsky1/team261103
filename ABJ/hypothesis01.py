@@ -1,5 +1,5 @@
 # 가설01. 
-# "환절기 감기" — 기온보다 일교차가 감기를 설명한다
+# 감기는 기온보다 일교차가 더 큰 영향을 줄 것이다.
 
 import numpy as np
 import pandas as pd
