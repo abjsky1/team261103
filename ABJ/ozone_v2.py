@@ -592,68 +592,19 @@ print(df)
 
 
 #==========================================================
-# 4. 상관계수
+# 4. 상관계수 (전체 27개월)
 #==========================================================
 
 # 4-1. 상관계수 전체 계산
 corr = df[["오존", "감기", "기흉", "COPD", "비염", "천식", "폐렴"]].corr()
-print( corr )
+print(corr.round(2))
 
-# 4-2. 오존 열에서 질병 6개만 골라내기
-corr_ozone = corr.loc[["감기", "기흉", "COPD", "비염", "천식", "폐렴"], ["오존"]]
-print(corr_ozone.round(2))
-
-# 4-3. 히트맵
-plt.figure(figsize=(4, 6))
-sns.heatmap(corr_ozone, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1, linewidths=0.5)
-plt.title("오존과 질병별 환자수 상관관계")
-plt.show()
-
-
-#==========================================================
-# 5. 산점도: 가로 오존, 세로 환자수 (2×3)
-#==========================================================
-
-# 1. 도화지를 2줄 3칸으로 나누기
-fig, axs = plt.subplots(2, 3, figsize=(16, 9))
-
-# 2. 칸마다 질병 하나씩
-axs[0, 0].scatter(df["오존"], df["감기"], color="gray")
-axs[0, 0].set_title("감기")
-axs[0, 0].set_xlabel("오존 (ppm)")
-axs[0, 0].set_ylabel("환자수")
-
-axs[0, 1].scatter(df["오존"], df["기흉"], color="gray")
-axs[0, 1].set_title("기흉")
-axs[0, 1].set_xlabel("오존 (ppm)")
-axs[0, 1].set_ylabel("환자수")
-
-axs[0, 2].scatter(df["오존"], df["COPD"], color="gray")
-axs[0, 2].set_title("COPD")
-axs[0, 2].set_xlabel("오존 (ppm)")
-axs[0, 2].set_ylabel("환자수")
-
-axs[1, 0].scatter(df["오존"], df["비염"], color="gray")
-axs[1, 0].set_title("비염")
-axs[1, 0].set_xlabel("오존 (ppm)")
-axs[1, 0].set_ylabel("환자수")
-
-axs[1, 1].scatter(df["오존"], df["천식"], color="gray")
-axs[1, 1].set_title("천식")
-axs[1, 1].set_xlabel("오존 (ppm)")
-axs[1, 1].set_ylabel("환자수")
-
-axs[1, 2].scatter(df["오존"], df["폐렴"], color="gray")
-axs[1, 2].set_title("폐렴")
-axs[1, 2].set_xlabel("오존 (ppm)")
-axs[1, 2].set_ylabel("환자수")
-
-# 3. 전체 제목, 여백 정리 후 출력
-fig.suptitle("오존과 질병별 환자수")
+# 4-2. 히트맵
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1, linewidths=0.5)
+plt.title("오존과 질병별 환자수 상관관계 (전체 27개월)")
 plt.tight_layout()
 plt.show()
-
-
 
 
 
@@ -689,31 +640,22 @@ plt.show()
 
 
 #==========================================================
-# 7. 오존 많은 달(3~6월)만 골라서 상관관계
+# 7. 오존 많은 달(3~6월) 상관계수
 #==========================================================
 
 # 7-1. 3~6월만 골라내기
 df_high = df[df["월"].isin([3, 4, 5, 6])]
 print(df_high)          # 9줄 (2024년 4개월 + 2025년 4개월 + 2026년 3월)
 
-# 7-2. 3~6월 상관계수
+# 7-2. 3~6월 상관계수 전체 계산
 corr_high = df_high[["오존", "감기", "기흉", "COPD", "비염", "천식", "폐렴"]].corr()
-corr_high_ozone = corr_high.loc[["감기", "기흉", "COPD", "비염", "천식", "폐렴"], ["오존"]]
+print(corr_high.round(2))
 
-# 7-3. 전체 27개월 상관계수 (비교용)
-corr_all = df[["오존", "감기", "기흉", "COPD", "비염", "천식", "폐렴"]].corr()
-corr_all_ozone = corr_all.loc[["감기", "기흉", "COPD", "비염", "천식", "폐렴"], ["오존"]]
-
-# 7-4. 두 결과를 나란히 붙이기
-corr_compare = pd.DataFrame()
-corr_compare["전체 27개월"] = corr_all_ozone["오존"]
-corr_compare["오존 많은 달(3~6월)"] = corr_high_ozone["오존"]
-print(corr_compare.round(2))
-
-# 7-5. 히트맵
-plt.figure(figsize=(6, 6))
-sns.heatmap(corr_compare, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1, linewidths=0.5)
-plt.title("오존과 질병별 환자수 상관관계 비교")
+# 7-3. 히트맵
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_high, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1, linewidths=0.5)
+plt.title("오존과 질병별 환자수 상관관계 (오존 많은 달 3~6월)")
+plt.tight_layout()
 plt.show()
 
 
@@ -732,6 +674,62 @@ print(group_mean.round(0))
 
 
 
+#==========================================================
+# 9. 산점도: 3~6월은 빨강, 나머지 달은 회색
+#==========================================================
 
+# 1. 나머지 달만 골라내기 (3~6월은 7번에서 만든 df_high 사용)
+df_other = df[df["월"].isin([1, 2, 7, 8, 9, 10, 11, 12])]
+
+# 2. 도화지를 2줄 3칸으로 나누기
+fig, axs = plt.subplots(2, 3, figsize=(16, 10))
+
+# 3-1. 감기 (만 명 단위로 보기 위해 10000으로 나눔)
+axs[0, 0].scatter(df_other["오존"], df_other["감기"] / 10000, color="gray", alpha=0.6, label="나머지 달")
+axs[0, 0].scatter(df_high["오존"], df_high["감기"] / 10000, color="red", alpha=0.8, label="오존 많은 달(3~6월)")
+axs[0, 0].set_title(f"감기 (r = {round(corr_ozone.loc['오존', '감기'], 2)})")
+axs[0, 0].set_xlabel("오존 (ppm)")
+axs[0, 0].set_ylabel("환자수 (만 명)")
+axs[0, 0].legend()
+
+# 3-2. 기흉 (환자수가 적어서 명 단위 그대로)
+axs[0, 1].scatter(df_other["오존"], df_other["기흉"], color="gray", alpha=0.6)
+axs[0, 1].scatter(df_high["오존"], df_high["기흉"], color="red", alpha=0.8)
+axs[0, 1].set_title(f"기흉 (r = {round(corr_ozone.loc['오존', '기흉'], 2)})")
+axs[0, 1].set_xlabel("오존 (ppm)")
+axs[0, 1].set_ylabel("환자수 (명)")
+
+# 3-3. COPD
+axs[0, 2].scatter(df_other["오존"], df_other["COPD"] / 10000, color="gray", alpha=0.6)
+axs[0, 2].scatter(df_high["오존"], df_high["COPD"] / 10000, color="red", alpha=0.8)
+axs[0, 2].set_title(f"COPD (r = {round(corr_ozone.loc['오존', 'COPD'], 2)})")
+axs[0, 2].set_xlabel("오존 (ppm)")
+axs[0, 2].set_ylabel("환자수 (만 명)")
+
+# 3-4. 비염
+axs[1, 0].scatter(df_other["오존"], df_other["비염"] / 10000, color="gray", alpha=0.6)
+axs[1, 0].scatter(df_high["오존"], df_high["비염"] / 10000, color="red", alpha=0.8)
+axs[1, 0].set_title(f"비염 (r = {round(corr_ozone.loc['오존', '비염'], 2)})")
+axs[1, 0].set_xlabel("오존 (ppm)")
+axs[1, 0].set_ylabel("환자수 (만 명)")
+
+# 3-5. 천식
+axs[1, 1].scatter(df_other["오존"], df_other["천식"] / 10000, color="gray", alpha=0.6)
+axs[1, 1].scatter(df_high["오존"], df_high["천식"] / 10000, color="red", alpha=0.8)
+axs[1, 1].set_title(f"천식 (r = {round(corr_ozone.loc['오존', '천식'], 2)})")
+axs[1, 1].set_xlabel("오존 (ppm)")
+axs[1, 1].set_ylabel("환자수 (만 명)")
+
+# 3-6. 폐렴
+axs[1, 2].scatter(df_other["오존"], df_other["폐렴"] / 10000, color="gray", alpha=0.6)
+axs[1, 2].scatter(df_high["오존"], df_high["폐렴"] / 10000, color="red", alpha=0.8)
+axs[1, 2].set_title(f"폐렴 (r = {round(corr_ozone.loc['오존', '폐렴'], 2)})")
+axs[1, 2].set_xlabel("오존 (ppm)")
+axs[1, 2].set_ylabel("환자수 (만 명)")
+
+# 4. 전체 제목, 여백 정리 후 출력
+fig.suptitle("오존과 질병별 환자수 (r = 전체 27개월 상관계수)")
+plt.tight_layout()
+plt.show()
 
 
