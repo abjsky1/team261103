@@ -220,12 +220,17 @@ df["월"] = df["년월"].dt.month
 # 2. 월별 평균 환자수
 month_mean = df.groupby("월", as_index=False)["환자수"].mean()
 
-# 3. 계절별 색상 정하기
-season_colors = {12: "#6baed6", 1: "#6baed6", 2: "#6baed6",     # 겨울: 파랑
-                 3: "#74c476", 4: "#74c476", 5: "#74c476",      # 봄: 초록
-                 6: "#fd8d3c", 7: "#fd8d3c", 8: "#fd8d3c",      # 여름: 주황
-                 9: "#e6550d", 10: "#e6550d", 11: "#e6550d"}    # 가을: 갈색
-colors = [season_colors[m] for m in month_mean["월"]]
+# 3. 계절별 색상 정하기 (월마다 하나씩 확인해서 색 넣기)
+colors = []
+for m in month_mean["월"]:
+    if m in [12, 1, 2]:
+        colors.append("#6baed6")      # 겨울: 파랑
+    elif m in [3, 4, 5]:
+        colors.append("#74c476")      # 봄: 초록
+    elif m in [6, 7, 8]:
+        colors.append("#fd8d3c")      # 여름: 주황
+    else:
+        colors.append("#e6550d")      # 가을: 갈색
 
 # 4. 막대그래프
 plt.figure(figsize=(10, 5))
@@ -235,6 +240,5 @@ plt.xlabel("월")
 plt.ylabel("평균 환자수")
 plt.grid(axis="y", linestyle="--", alpha=0.5)
 plt.show()
-
 
 
